@@ -7,6 +7,7 @@ import ListGroup from "./common/listgroup";
 import MoviesTable from "./moviesTable";
 import { Link } from "react-router-dom";
 import _ from "lodash";
+import SearchBar from "./common/searchBar";
 
 class Movies extends Component {
   state = {
@@ -14,6 +15,8 @@ class Movies extends Component {
     pageSize: 4,
     currentPage: 1,
     genres: [],
+    searchQuery: "",
+    selectedGenre: null,
     sortColumn: { path: "title", sortOrder: "asc" },
   };
 
@@ -33,7 +36,15 @@ class Movies extends Component {
   };
 
   handleGenreSelection = (genre) => {
-    this.setState({ selectedGenre: genre, currentPage: 1 });
+    this.setState({ selectedGenre: genre, searchQuery: "", currentPage: 1 });
+  };
+
+  handleSearch = (query) => {
+    this.setState({
+      searchQuery: query,
+      selectedGenre: null,
+      currentPage: 1,
+    });
   };
 
   handleLike = (movie) => {
@@ -55,11 +66,17 @@ class Movies extends Component {
       movies: AllMovies,
       selectedGenre,
       sortColumn,
+      searchQuery,
     } = this.state;
-    const filtered =
-      selectedGenre && selectedGenre._id
-        ? AllMovies.filter((m) => m.genre._id === selectedGenre._id)
-        : AllMovies;
+    let filtered = AllMovies;
+
+    if (searchQuery)
+      filtered = AllMovies.filter((x) =>
+        x.title.toLowerCase().startsWith(searchQuery.toLowerCase())
+      );
+    else if (selectedGenre && selectedGenre._id)
+      filtered = AllMovies.filter((m) => m.genre._id === selectedGenre._id);
+
     const sorted = _.orderBy(filtered, sortColumn.path, sortColumn.sortOrder);
     const movies = paginate(sorted, currentPage, pageSize);
 
@@ -74,6 +91,7 @@ class Movies extends Component {
       genres,
       selectedGenre,
       sortColumn,
+      searchQuery,
     } = this.state;
 
     if (count === 0) {
@@ -93,10 +111,16 @@ class Movies extends Component {
             ></ListGroup>
           </div>
           <div className="col-9">
-            <Link className="btn btn-primary" to="/movies/new">
+            <Link
+              style={{ marginBottom: "15px" }}
+              className="btn btn-primary"
+              to="/movies/new"
+            >
               New Movie
             </Link>
             <p>Showing {totalCount} movies in the database.</p>
+
+            <SearchBar value={searchQuery} onChange={this.handleSearch} />
             <MoviesTable
               movies={movies}
               sortColumn={sortColumn}
